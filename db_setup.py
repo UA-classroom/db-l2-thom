@@ -30,8 +30,20 @@ def create_tables():
     A function to create the necessary tables for the project.
     """
     connection = get_connection()
-    # Implement
-    pass
+    
+    create_users_table_query = """
+    CREATE TABLE IF NOT EXISTS users(
+        id                  bigint      GENERATED ALWAYS AS IDENTITY,
+        username            varchar(50) UNIQUE NOT NULL, 
+        avarar_url          text        UNIQUE,
+        user_description    text,
+        datetime_joined     timestamptz DEFAULT now()
+    );
+    """
+
+    with connection:
+        with connection.cursor() as cursor:
+            cursor.execute(create_users_table_query)
 
 
 if __name__ == "__main__":
