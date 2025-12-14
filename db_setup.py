@@ -305,6 +305,41 @@ def create_tables():
     );
     """
 
+    # Messages
+    create_user_messages_table_query = """
+    CREATE TABLE IF NOT EXISTS user_messages(
+        id                      BIGINT          GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        sender_user_id          BIGINT          REFERENCES users(id),
+        listing_id              BIGINT          REFERENCES listings(id),
+        body                    TEXT,
+        created_at              TIMESTAMPTZ     DEFAULT now(),
+        recipient_opened_at     TIMESTAMPTZ
+    );
+    """
+
+    create_user_messages_attachements_table_query = """
+    CREATE TABLE IF NOT EXISTS user_messages_attachements(
+        user_message_id     BIGINT      GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        photo_url           TEXT        UNIQUE  NOT NULL
+    );
+    """
+
+    # Reviewes
+    create_user_ratings_table_query = """
+    CREATE TABLE IF NOT EXISTS user_ratings(
+        listing_id                      BIGINT          REFERENCES listings(id),
+        reviewing_user_id               BIGINT          REFERENCES users(id),
+        reviewed_at                     TIMESTAMPTZ     DEFAULT now(),
+        positive_review                 BOOL            NOT NULL,
+        review_comment                  TEXT,
+        listing_description_rating      INT,
+        listing_communication_rating    INT,
+        listing_delivery_time_rating    INT,
+        PRIMARY KEY (listing_id, reviewing_user_id)
+    );
+    """
+
+
     with connection:
         with connection.cursor() as cursor:
             # Geographical
@@ -339,7 +374,11 @@ def create_tables():
             cursor.execute(create_shipping_ranges_table_query)
             cursor.execute(create_estimated_shipping_costs_table_query)
             cursor.execute(create_listing_shipping_settings_table_query)
-
+            # Messages
+            cursor.execute(create_user_messages_table_query)
+            cursor.execute(create_user_messages_attachements_table_query)
+            # Reviewes
+            cursor.execute(create_user_ratings_table_query)
 
 if __name__ == "__main__":
     # Only reason to execute this file would be to create new tables, meaning it serves a migration file
