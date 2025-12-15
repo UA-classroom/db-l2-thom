@@ -41,8 +41,9 @@ def create_tables():
 
     create_cities_table_query = """
     CREATE TABLE IF NOT EXISTS cities(
-        id      INT     GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        name    TEXT    UNIQUE  NOT NULL
+        id          INT     GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        name        TEXT    UNIQUE  NOT NULL,
+        country_id  BIGINT  REFERENCES countries(id)
     );
     """
 
@@ -110,15 +111,16 @@ def create_tables():
     create_user_email_notification_settings_table_query = """
     CREATE TABLE IF NOT EXISTS user_email_notification_settings(
         user_id                             BIGINT  PRIMARY KEY  REFERENCES users(id),
-        upon_new_device_login               BOOL    NOT NULL  DEFAULT (true),
-        copy_read_messages                  BOOL    NOT NULL  DEFAULT (false),
-        favorites_list_updates              BOOL    NOT NULL  DEFAULT (true),
-        upon_missing_payment                BOOL    NOT NULL  DEFAULT (true),
-        upon_failed_auction                 BOOL    NOT NULL  DEFAULT (true),
-        upon_bid_exceeding_starting_price   BOOL    NOT NULL  DEFAULT (false),
-        other_companies_promotions          BOOL    NOT NULL  DEFAULT (false),
-        newsletters                         BOOL    NOT NULL  DEFAULT (false),
-        newsletter_frequency_id             BIGINT  NOT NULL  REFERENCES newsletter_frequency_options(id)
+        upon_new_device_login               BOOL         NOT NULL  DEFAULT (true),
+        copy_read_messages                  BOOL         NOT NULL  DEFAULT (false),
+        favorites_list_updates              BOOL         NOT NULL  DEFAULT (true),
+        upon_missing_payment                BOOL         NOT NULL  DEFAULT (true),
+        upon_failed_auction                 BOOL         NOT NULL  DEFAULT (true),
+        upon_bid_exceeding_starting_price   BOOL         NOT NULL  DEFAULT (false),
+        other_companies_promotions          BOOL         NOT NULL  DEFAULT (false),
+        newsletters                         BOOL         NOT NULL  DEFAULT (false),
+        newsletter_frequency_id             BIGINT       NOT NULL  REFERENCES newsletter_frequency_options(id) DEFAULT (1),
+        newsletter_frequency_changed_at     TIMESTAMPTZ  NOT NULL  DEFAULT now()
     );
     """
 
@@ -136,7 +138,7 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS listing_category_filters(
         id                      BIGINT  GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
         listing_category_id     BIGINT  REFERENCES listing_categories(id),
-        title   TEXT            NOT NULL
+        title                   TEXT    NOT NULL
     );
     """
 
@@ -156,18 +158,18 @@ def create_tables():
 
     create_listings_table_query = """
     CREATE TABLE IF NOT EXISTS listings(
-        id          BIGINT          GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        created_at  TIMESTAMPTZ     DEFAULT now(),
-        title       TEXT            NOT NULL,
-        description TEXT,
-        soft_deleted    BOOL    NOT NULL  DEFAULT (false),
-        soft_deleted_at TIMESTAMPTZ DEFAULT now(),
-        pickup_available    BOOL    NOT NULL DEFAULT (false),
-        buyer_insurance     BOOL    NOT NULL DEFAULT (true),
-        user_id             BIGINT  REFERENCES users(id),
-        type_id             BIGINT  REFERENCES listing_types(id),
-        status_id           BIGINT  REFERENCES listing_statuses(id),
-        category_id         BIGINT  REFERENCES listing_categories(id)
+        id                  BIGINT          GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        created_at          TIMESTAMPTZ     DEFAULT now(),
+        title               TEXT            NOT NULL,
+        description         TEXT,
+        soft_deleted        BOOL            NOT NULL  DEFAULT (false),
+        soft_deleted_at     TIMESTAMPTZ     DEFAULT now(),
+        pickup_available    BOOL            NOT NULL DEFAULT (false),
+        buyer_insurance     BOOL            NOT NULL DEFAULT (true),
+        user_id             BIGINT          REFERENCES users(id),
+        type_id             BIGINT          REFERENCES listing_types(id),
+        status_id           BIGINT          REFERENCES listing_statuses(id),
+        category_id         BIGINT          REFERENCES listing_categories(id)
     );
     """
 
@@ -379,8 +381,181 @@ def create_tables():
             cursor.execute(create_user_messages_attachements_table_query)
             # Reviewes
             cursor.execute(create_user_ratings_table_query)
+    
+    if connection:
+        connection.close()
+
+
+def seed_data():
+    connection = get_connection()
+
+    insert_fictive_country_data_query = """
+    INSERT INTO countries(name)
+    VALUES
+        ('Afghanistan'), ('Albania'), ('Algeria'), ('Andorra'), ('Angola'), ('Antigua and Barbuda'), ('Argentina'), 
+        ('Armenia'), ('Australia'), ('Austria'), ('Azerbaijan'), ('Bahamas'), ('Bahrain'), ('Bangladesh'), ('Barbados'), 
+        ('Belarus'), ('Belgium'), ('Belize'), ('Benin'), ('Bhutan'), ('Bolivia'), ('Bosnia and Herzegovina'), 
+        ('Botswana'), ('Brazil'), ('Brunei'), ('Bulgaria'), ('Burkina Faso'), ('Burundi'), ('Cabo Verde'), 
+        ('Cambodia'), ('Cameroon'), ('Canada'), ('Central African Republic'), ('Chad'), ('Chile'), 
+        ('China'), ('Colombia'), ('Comoros'), ('Congo'), ('Costa Rica'), ('Croatia'), ('Cuba'), 
+        ('Cyprus'), ('Czech Republic'), ('Denmark'), ('Djibouti'), ('Dominica'), ('Dominican Republic'), 
+        ('East Timor'), ('Ecuador'), ('Egypt'), ('El Salvador'), ('Equatorial Guinea'), ('Eritrea'), ('Estonia'), 
+        ('Eswatini'), ('Ethiopia'), ('Fiji'), ('Finland'), ('France'), ('Gabon'), ('Gambia'), ('Georgia'), 
+        ('Germany'), ('Ghana'), ('Greece'), ('Grenada'), ('Guatemala'), ('Guinea'), ('Guinea-Bissau'), ('Guyana'), 
+        ('Haiti'), ('Honduras'), ('Hungary'), ('Iceland'), ('India'), ('Indonesia'), ('Iran'), ('Iraq'), ('Ireland'), 
+        ('Israel'), ('Italy'), ('Ivory Coast'), ('Jamaica'), ('Japan'), ('Jordan'), ('Kazakhstan'), ('Kenya'), 
+        ('Kiribati'), ('South Korea'), ('Kosovo'), ('Kuwait'), ('Kyrgyzstan'), ('Laos'), ('Latvia'), ('Lebanon'), 
+        ('Lesotho'), ('Liberia'), ('Libya'), ('Liechtenstein'), ('Lithuania'), ('Luxembourg'), ('Madagascar'), ('Malawi'), 
+        ('Malaysia'), ('Maldives'), ('Mali'), ('Malta'), ('Marshall Islands'), ('Mauritania'), ('Mauritius'), 
+        ('Mexico'), ('Micronesia'), ('Moldova'), ('Monaco'), ('Mongolia'), ('Montenegro'), ('Morocco'), ('Mozambique'), 
+        ('Myanmar'), ('Namibia'), ('Nauru'), ('Nepal'), ('Netherlands'), ('New Zealand'), ('Nicaragua'), ('Niger'), 
+        ('Nigeria'), ('North Macedonia'), ('Norway'), ('Oman'), ('Pakistan'), ('Palau'), ('Palestine'), ('Panama'), 
+        ('Papua New Guinea'), ('Paraguay'), ('Peru'), ('Philippines'), ('Poland'), ('Portugal'), ('Qatar'), 
+        ('Romania'), ('Rwanda'), ('Saint Kitts and Nevis'), ('Saint Lucia'), ('Saint Vincent and the Grenadines'), 
+        ('Samoa'), ('San Marino'), ('Sao Tome and Principe'), ('Saudi Arabia'), ('Senegal'), ('Serbia'), ('Seychelles'), 
+        ('Sierra Leone'), ('Singapore'), ('Slovakia'), ('Slovenia'), ('Solomon Islands'), ('Somalia'), ('South Africa'), 
+        ('South Sudan'), ('Spain'), ('Sri Lanka'), ('Sudan'), ('Suriname'), ('Sweden'), ('Switzerland'), ('Syria'), 
+        ('Taiwan'), ('Tajikistan'), ('Tanzania'), ('Thailand'), ('Togo'), ('Tonga'), ('Trinidad and Tobago'), ('Tunisia'), 
+        ('Turkey'), ('Turkmenistan'), ('Tuvalu'), ('Uganda'), ('Ukraine'), ('United Arab Emirates'), ('United Kingdom'), 
+        ('United States'), ('Uruguay'), ('Uzbekistan'), ('Vanuatu'), ('Vatican City'), ('Venezuela'), ('Vietnam'), ('Yemen'), 
+        ('Zambia'), ('Zimbabwe')
+    ;
+    """
+
+    insert_fictive_city_data_query = """
+    INSERT INTO cities(name, country_id)
+    VALUES
+        ('Borlänge', 137), ('Borås', 137), ('Eskilstuna', 137), ('Falun', 137), ('Gävle', 137), ('Göteborg', 137), 
+        ('Halmstad', 137), ('Helsingborg', 137), ('Jönköping', 137), ('Kalmar', 137), ('Karlskrona', 137), ('Karlstad', 137), 
+        ('Kristianstad', 137), ('Landskrona', 137), ('Lidingö', 137), ('Linköping', 137), ('Luleå', 137), ('Lund', 137), 
+        ('Malmö', 137), ('Motala', 137), ('Norrköping', 137), ('Nyköping', 137), ('Skellefteå', 137), ('Skövde', 137), 
+        ('Södertälje', 137), ('Stockholm', 137), ('Sundsvall', 137), ('Trollhättan', 137), ('Tumba', 137), ('Uddevalla', 137), 
+        ('Umeå', 137), ('Upplands Väsby', 137), ('Uppsala', 137), ('Varberg', 137), ('Västerås', 137), ('Växjö', 137), 
+        ('Åkersberga', 137), ('Örebro', 137), ('Örnsköldsvik', 137), ('Östersund', 137)
+    ;
+    """
+
+    insert_fictive_users_query = """
+    INSERT INTO users(username, avatar_url, description)
+    VALUES
+        ('MinMax67',            NULL,                               NULL),
+        ('Tjorven',             '/server/users/avatars/123.jpg',    NULL),
+        ('Melker',              '/server/users/avatars/124.jpg',    'Badar alltid med kläderna på.'),
+        ('Jarmo',               NULL,                               'Har aldrig rätt förutom när jag har fel.'),
+        ('AnitaParsson',        '/server/users/avatars/125.jpg',    NULL),
+        ('CoolBoi_not',         '/server/users/avatars/126.jpg',    'Coolaste katten i stan! :D'),
+        ('LisbetSalamander',    '/server/users/avatars/127.jpg',    'Säljer allt och lite till. Fast oftast inget.'),
+        ('Martin',              NULL,                               NULL),
+        ('Myrorna',             '/server/users/avatars/128.jpg',    'Välkommen till Myrornas webbshop - utrop från 1 kr!')
+    ;   
+    """
+
+    insert_fictive_user_details_query = """
+    INSERT INTO user_details(user_id, first_name, last_name, email, phone, street_address, zip_code, city_id, country_id, is_company)
+    VALUES
+        (1, 'Maximilian',   NULL,       'max@power.com',            0701231212, NULL,               NULL,   3,  137, false),
+        (2, NULL,           NULL,       'tjorven@saltkrakan.se',    0721231213, NULL,               12345,  10, 137, false),
+        (3, 'Melker',       NULL,       'melker@saltkrakan.se',     0721231215, NULL,               12365,  10, 137, false),
+        (4, NULL,           NULL,       'jarmo_olutta@soumi.fi',    NULL,       NULL,               NULL,   14, 137, false),
+        (5, 'Anita',        'Pärsson',  'Panita@telia.se',          0721231217, 'Kostigen 7',       13245,  11, 137, false),
+        (6, NULL,           NULL,       'henrik_88@hotmail.com',    NULL,       NULL,               NULL,   13, 137, false),
+        (7, 'Lisbet',       'Salander', 'lill-bettan@millenium.nu', 0736737289, 'Mörtstigen 88',    NULL,   17, 137, false),
+        (8, NULL,           NULL,       'martin_martin@martin.ma',  NULL,       NULL,               NULL,   4,  137, false),
+        (9, 'Myrorna',      NULL,       'info@myrorna.se',          0850356343, 'Hornsgatan 45',    15356,  5,  137, true)
+    ;
+    """
+
+    insert_fictive_user_selling_settings_query = """
+    INSERT INTO user_selling_settings(
+	    user_id, auto_review, auto_book_shipping, default_packaging_cost, auto_fill_listing_content, show_listings_fbmarketplace, delayed_delivery_warning
+	    )
+    VALUES
+        (1, true,    DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
+        (2, DEFAULT, true,    49.90,   DEFAULT, DEFAULT, DEFAULT),
+        (3, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
+        (4, DEFAULT, DEFAULT, DEFAULT, true,    DEFAULT, DEFAULT),
+        (5, DEFAULT, true,    DEFAULT, DEFAULT, DEFAULT, DEFAULT),
+        (6, DEFAULT, DEFAULT, DEFAULT, DEFAULT, true,    true),
+        (7, DEFAULT, DEFAULT, 100,     DEFAULT, DEFAULT, DEFAULT),
+        (8, true,    DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
+        (9, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT)
+    ;
+    """
+
+    insert_fictive_shipping_companies_query = """
+    INSERT INTO shipping_companies(title, insurance_information, company_logo_url)
+    VALUES
+        ('DB Schenker',       'Försäkrad upp till 5 000 kr',       '/server/shipping_companies/logotypes/schenker.png'),
+        ('DHL',               'Försäkrad upp till 5 000 kr',       '/server/shipping_companies/logotypes/dhl.png'),
+        ('Instabox',          'Ersätter max 150 kr/kg',            '/server/shipping_companies/logotypes/instabox.png'),
+        ('PostNord Ombud',    'Ersätter för varor under 5 000 kr', '/server/shipping_companies/logotypes/postnord_ombud.png'),
+        ('PostNord Brevlåda', 'Ersätter max 150 kr/kg',            '/server/shipping_companies/logotypes/postnord_brevlada.png')
+    ;
+    """
+
+    insert_fictive_newsletter_frequency_options_query = """
+    INSERT INTO newsletter_frequency_options(title)
+    VALUES
+        ('Jag vill ta del av samtliga erbjudanden, rabattkoder & rekommendationer'),
+        ('Endast 1 gång per vecka'),
+        ('Endast 1 gång varannan vecka'),
+        ('Endast 1 gång i månaden'),
+        ('Pausa alla nyhetsbrev i 3 månader')
+    ;
+    """
+
+    insert_fictive_newsletter_frequency_options_query = """
+    INSERT INTO newsletter_frequency_options(title)
+    VALUES
+        ('Jag vill ta del av samtliga erbjudanden, rabattkoder & rekommendationer'),
+        ('Endast 1 gång per vecka'),
+        ('Endast 1 gång varannan vecka'),
+        ('Endast 1 gång i månaden'),
+        ('Pausa alla nyhetsbrev i 3 månader')
+    ;
+    """
+
+    insert_user_email_notification_settings_query = """
+    INSERT INTO user_email_notification_settings(
+        user_id,                 upon_new_device_login,             copy_read_messages,         favorites_list_updates, upon_missing_payment, 
+        upon_failed_auction,     upon_bid_exceeding_starting_price, other_companies_promotions, newsletters, 
+        newsletter_frequency_id, newsletter_frequency_changed_at
+        )
+    VALUES
+        (1, DEFAULT, false,   false,   false,   false,   false,   DEFAULT, true,    DEFAULT, DEFAULT),
+        (2, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, 2,       DEFAULT),
+        (3, false,   DEFAULT, true,    DEFAULT, DEFAULT, true,    false,   DEFAULT, 2,       DEFAULT),
+        (4, DEFAULT, true,    DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, 3,       DEFAULT),
+        (5, DEFAULT, DEFAULT, false,   DEFAULT, false,   DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
+        (6, DEFAULT, DEFAULT, DEFAULT, true,    DEFAULT, DEFAULT, DEFAULT, DEFAULT, 4,       DEFAULT),
+        (7, true,    DEFAULT, DEFAULT, true,    DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT, DEFAULT),
+        (8, DEFAULT, false,   DEFAULT, DEFAULT, DEFAULT, false,   true,    DEFAULT, 5,       DEFAULT),
+        (9, DEFAULT, DEFAULT, DEFAULT, DEFAULT, false,   DEFAULT, DEFAULT, DEFAULT, 5,       DEFAULT)
+    ;
+    """
+
+    with connection:
+        with connection.cursor() as cursor:
+            # Geographical
+            cursor.execute(insert_fictive_country_data_query)
+            cursor.execute(insert_fictive_city_data_query)
+            # Users
+            cursor.execute(insert_fictive_users_query)
+            cursor.execute(insert_fictive_user_details_query)
+            cursor.execute(insert_fictive_user_selling_settings_query)
+            cursor.execute(insert_fictive_shipping_companies_query)
+            cursor.execute(insert_fictive_newsletter_frequency_options_query)
+            cursor.execute(insert_user_email_notification_settings_query)
+            cursor.execute(insert_fictive_newsletter_frequency_options_query)
+    
+    if connection:
+        connection.close()
+
 
 if __name__ == "__main__":
     # Only reason to execute this file would be to create new tables, meaning it serves a migration file
     create_tables()
     print("Tables created successfully.")
+    seed_data()
+    print("Fictive data was inserted successfully.")
+    
