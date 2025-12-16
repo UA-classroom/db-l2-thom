@@ -322,7 +322,7 @@ def create_tables():
 
     create_user_messages_attachements_table_query = """
     CREATE TABLE IF NOT EXISTS user_messages_attachements(
-        user_message_id     BIGINT      GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        user_message_id     BIGINT      REFERENCES user_messages(id)  PRIMARY KEY,
         photo_url           TEXT        UNIQUE  NOT NULL
     );
     """
@@ -687,11 +687,11 @@ def seed_data():
     insert_fictive_charity_organizations_query = """
     INSERT INTO charity_organizations(title, logo_url)
     VALUES
-        ('Musikhjälpen', '/server/charity_organizations/logotypes/musikhjalpen.png'),
-        ('Rädda Barnen', '/server/charity_organizations/logotypes/radda_barnen.png'),
-        ('Svenska Röda Korset', '/server/charity_organizations/logotypes/svenska_roda_korset.png'),
-        ('SOS Barnbyar', '/server/charity_organizations/logotypes/sos_barnbyar.png'),
-        ('Naturskyddsföreningen', '/server/charity_organizations/logotypes/naturskyddsforeningen.png')
+        ('Musikhjälpen',            '/server/charity_organizations/logotypes/musikhjalpen.png'),
+        ('Rädda Barnen',            '/server/charity_organizations/logotypes/radda_barnen.png'),
+        ('Svenska Röda Korset',     '/server/charity_organizations/logotypes/svenska_roda_korset.png'),
+        ('SOS Barnbyar',            '/server/charity_organizations/logotypes/sos_barnbyar.png'),
+        ('Naturskyddsföreningen',   '/server/charity_organizations/logotypes/naturskyddsforeningen.png')
     """
 
     insert_fictive_listing_auction_attributes_query = """
@@ -736,8 +736,33 @@ def seed_data():
         (1, 2, NULL,    NULL,   2, 1, 1),
         (2, 3, 150,     50,     4, 2, 2),
         (3, 1, NULL,    29,     1, 3, 3)
+    ;
     """
 
+    # user_messages
+    insert_fictive_user_messages_query = """
+    INSERT INTO user_messages(sender_user_id, listing_id, created_at, recipient_opened_at, body)
+    VALUES
+        (2, 2, DEFAULT, now(),  'Hej! Dum fråga kanske, men kan man få den helt gratis, haha?'),
+        (2, 5, DEFAULT, now(),  'Tyvärr inte. Det var extremt svårt för mig att få tag på den här biljetten så jag vill ha en slant för den.'),
+        (1, 1, DEFAULT, NULL,   'Hej, jag undrar om det är exakt samma som den på bilden (se bifogad)?')
+    ;
+    """
+
+    insert_fictive_user_messages_attachements_query = """
+    INSERT INTO user_messages_attachements(user_message_id, photo_url)
+    VALUES (3, '/server/user_messages_attachments/0001.jpg');
+    """
+
+    insert_fictive_user_ratings_query = """
+    INSERT INTO user_ratings(
+        listing_id, reviewing_user_id, reviewed_at, positive_review, review_comment, listing_description_rating, listing_communication_rating, listing_delivery_time_rating
+        )
+    VALUES
+        (1, 2, DEFAULT, true, 'Smidig affär! Kan rekommendera :)', NULL, NULL, NULL),
+        (2, 5, DEFAULT, false, 'Osmidig affär! Kan inte rekommendera! >:(', 1, 1, 1)
+    ;
+    """
 
     with connection:
         with connection.cursor() as cursor:
@@ -772,6 +797,10 @@ def seed_data():
             cursor.execute(insert_fictive_product_size_options_query)
             cursor.execute(insert_fictive_shipping_ranges_query)
             cursor.execute(insert_fictive_listing_shipping_settings_query)
+            # user_messages
+            cursor.execute(insert_fictive_user_messages_query)
+            cursor.execute(insert_fictive_user_messages_attachements_query)
+            cursor.execute(insert_fictive_user_ratings_query)
     
     if connection:
         connection.close()
