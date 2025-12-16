@@ -202,10 +202,11 @@ def create_tables():
 
     create_listing_photos_table_query = """
     CREATE TABLE IF NOT EXISTS listing_photos(
-        id          BIGINT  GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        listing_id  BIGINT  REFERENCES listings(id),
-        url         TEXT    UNIQUE  NOT NULL,
-        view_order  BIGINT
+        id          BIGINT       GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        listing_id  BIGINT       REFERENCES listings(id),
+        url         TEXT         UNIQUE  NOT NULL,
+        view_order  BIGINT,
+        uploaded_at TIMESTAMPTZ  DEFAULT now()
     );
     """
 
@@ -242,7 +243,7 @@ def create_tables():
     """
 
     create_listing_auction_attributes_table_query = """
-    CREATE TABLE IF NOT EXISTS listing_attributes(
+    CREATE TABLE IF NOT EXISTS listing_auction_attributes(
         listing_id                  BIGINT          REFERENCES listings(id)  PRIMARY KEY,
         starting_price              NUMERIC         NOT NULL,
         auction_deadline_datetime   TIMESTAMPTZ     NOT NULL,
@@ -274,15 +275,15 @@ def create_tables():
 
     create_product_size_options_table_query = """
     CREATE TABLE IF NOT EXISTS product_size_options(
-        id      BIGINT  GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        size    BIGINT  UNIQUE  NOT NULL
+        id      BIGINT       GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        size    VARCHAR(50)  UNIQUE  NOT NULL
     );
     """
     
     create_shipping_ranges_table_query = """
     CREATE TABLE IF NOT EXISTS shipping_ranges(
-        id              BIGINT  GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        range_title     BIGINT  UNIQUE  NOT NULL
+        id              BIGINT          GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        range_title     VARCHAR(150)    UNIQUE  NOT NULL
     );
     """
 
@@ -534,6 +535,210 @@ def seed_data():
     ;
     """
 
+    # Listings
+    insert_fictive_listing_types_query = """
+    INSERT INTO listing_types(name)
+    VALUES
+        ('Auktion'),
+        ('Köp nu'),
+        ('Auktion + Köp nu-pris')
+    ;
+    """
+
+    insert_fictive_listing_statuses_query = """
+    INSERT INTO listing_statuses(title)
+    VALUES
+        ('Aktiv'), ('Såld'), ('Ej såld')
+    ;
+    """
+
+    insert_fictive_listing_categories_query = """
+    INSERT INTO listing_categories(title, main_category_id, description)
+    VALUES
+        ('Accessoarer',                  NULL,   'Med accessoarer går det att skapa en snygg stil direkt - det är trots allt detaljerna som ger dig pricken över i:et. Hos oss på Tradera hittar du både oanvända tillbehör såväl som tillbehör second hand till din outfit och på denna sida har vi samlat accessoarer både för dam och herr. Titta igenom utbudet och hitta en ny favorit!'),
+        ('Antikt & Design',              NULL,   'Fascineras du av gamla vackra ting och gillar att krydda inredningen med unika konsthantverk? I Traderas rika utbud av antikt och design finns mängder av inredningsfavoriter – oavsett om man älskar klassiskt porslin, föredrar modernare skulpturer i keramik eller söker antikviteter med spännande patina.'),
+        ('Barnartiklar',                 NULL,   'Det är oftast många nya prylar som måste inhandlas när man är gravid eller ammar, vilket kan resultera i ett stort hål i plånboken. Men genom att handla second hand har man chansen att hitta prylar till ett betydligt bättre pris än i butik. Köp produkter för graviditet och amning second hand på Tradera!'),
+        ('Barnkläder & Barnskor',        NULL,   'Barn växer så snabbt. Oftast känns det onödigt att köpa nya barnkläder eller barnskor, de kommer ju strax att växa ur alltihop ändå. Om du hellre lägger pengar på andra saker, exempelvis barnvagnen, har du kommit till rätt ställe. På Tradera kan du köpa fina begagnade barnkläder till bra pris.'),
+        ('Barnleksaker',                 NULL,   'Spana in alla leksaker online hos Tradera. Skäm bort barnen med allt från dockor, lego och sällskapsspel. Missa inte chansen och passa på att fynda populära leksaker till lägre priser än vanligt.'),
+        ('Biljetter & Resor',            NULL,   'Vill du ut och resa och samtidigt spara lite pengar? Eller behöver du bioiljetter till den senaste premiären? Här hittar du presentkort och biljetter av olika slag. Vi har tåg- och flygbiljetter, presentkort till hotell och mer. Här kan du definitivt hitta riktiga fynd!'),
+        ('Bröllopsaccessoarer',          1,      NULL),
+        ('Bälten & skärp',               1,      'Ett bälte eller skärp blir pricken över i:et i din outfit. Förutom att bälten fyller en funktion fungerar de även som en accessoar. Ett par höga jeans blir exempelvis snygga med ett läderbälte. Billiga bälten eller skärp i en utstickande färg kan bli snyggt till en i övrigt nedtonad klädsel. Hitta fina skärp för dam och herr här.'),
+        ('Textilier',                    2,      'För att ge hemmet den där ombonade och hemtrevliga känslan är det viktigt att hitta rätt textilier. Med ett vackert mönstrat tyg, en smakfull pläd eller ett par dekorativa kuddar, kan hemmets atmosfär enkelt förändras. Här på Tradera finner du väldesignade textilier i äldre såväl som nyare stil.'),
+        ('Dukar & tabletter',            9,      'Middagsbordet blir mer än bara en plats att äta på när det kläs med en vacker duk eller en elegant tablett. I Traderas urval av dukar och tabletter finns en mängd stilar, färger och mönster som passar alla. Från traditionella vita dukar till festliga tillfällen och färgstarka tabletter som ger en lekfull touch till frukostbordet.'),
+        ('Löpare',                       10,     NULL),
+        ('Amning & graviditet',          3,      'Det är oftast många nya prylar som måste inhandlas när man är gravid eller ammar, vilket kan resultera i ett stort hål i plånboken. Men genom att handla second hand har man chansen att hitta prylar till ett betydligt bättre pris än i butik. Köp produkter för graviditet och amning second hand på Tradera!'),
+        ('Gravidkuddar & amningskuddar', 12,     'Ju tyngre och större kroppen blir under graviditeten, desto svårare blir det att hitta en bekväm position. Då kan det vara skönt att bulla upp med en gravidkudde i sängen eller soffan. Kika runt bland annonserna på Tradera och ta möjligheten att köpa gravidkuddar och amningskuddar till bra pris second hand.'),
+        ('Accessoarer för barn',         4,      'Barnmössor är ett måste för små bebisar och barn då de annars snabbt blir nedkylda. Även under varmare årstider kan bebisar behöva en tunn mössa för att inte bli kalla. Här går det att hitta mängder av fina begagnade barnmössor i gott skick till bra priser.'),
+        ('Mössor & kepsar för barn',     14,     'En mössa skyddar och värmer när det är kallt ute. Perfekt när man ska vara ute och leka! Att köpa en mössa till barn second hand på Tradera är både prisvärt och klimatsmart. Välkommen att kika runt bland annonserna efter snygga barnmössor i olika storlekar, modeller och färger.')
+    ;
+    """
+
+    insert_fictive_listing_category_filters_query = """
+    INSERT INTO listing_category_filters(listing_category_id, title)
+    VALUES
+        (1, 'Material'),
+        (1, 'Accessoarfärg'),
+        (3, 'Märke - Barnartiklar'),
+        (4, 'Barnstorlek'),
+        (4, 'Skostorlek'),
+        (4, 'Avdelning'),
+        (4, 'Varumärke'),
+        (4, 'Färg'),
+        (5, 'LEGO-serie'),
+        (5, 'Dockskåpsskala'),
+        (5, 'Dockserie'),
+        (5, 'Plagg'),
+        (5, 'Antal bitar')
+    ;
+    """
+
+    
+    insert_fictive_listing_category_filter_options_query = """
+    INSERT INTO listing_category_filter_options(listing_filter_id, name)
+    VALUES
+        (1, 'Skinn/Läder'), (1, 'Ull'), (1, 'Annat material'), (1, 'Konstläder'), (1, 'Syntet/nylon'), (1, 'Textil'), (1, 'Canvas'), (1, 'Silke/siden'),
+        (2, 'Flerfärgad'),
+        (3, 'Aldoria'), (3, 'Alvababy'), (3, 'Baby Brezza'), (3, 'BabyBjörn'), (3, 'Beco'),
+        (4, '86'), (4, '92'), (4, '98'), (4, '104'), (4, '110'), (4, '116'), (4, '122'),
+        (5, '12'), (5, '13'), (5, '14'), (5, '15'), (5, '16'), (5, '17'), (5, '18'),
+        (6, 'Flicka'), (6, 'Unisex'), (6, 'Pojke'),
+        (7, 'Adidas'), (7, 'Adieu'), (7, 'Alfa'),
+        (8, 'Blå'), (8, 'Röd'), (8, 'Flerfärgad'),
+        (9, 'Star Wars'), (5, 'Pirates'), (5, 'Ideas'), (5, 'Elves'),
+        (10, 'Barbie 1:6'), (5, 'Lundbyskalan 1:18'), (5, 'Övriga skalor'),
+        (11, 'Barbie'), (11, 'Sindy'), (11, 'Reborn'),
+        (12, 'Tröjor'), (12, 'Skor'), (12, 'Pyjamas'),
+        (13, '< 10'), (13, '11-30'), (13, '31-50'), (13, '> 50')
+    ;
+    """
+
+    insert_fictive_listings_query = """
+    INSERT INTO listings(
+        created_at, title, soft_deleted, soft_deleted_at, pickup_available, buyer_insurance, user_id, type_id, status_id, category_id, description
+        )
+    VALUES
+        (DEFAULT, 'Stjärngossestrut',                       false, NULL,  true,  true,  2, 1, 1, 14, 'Säljer min älskade stjärngossestrut som nu har lussat klart.'),
+        (DEFAULT, 'Enkelbiljett till 70-talets Göteborg',   false, NULL,  false, true,  5, 1, 1, 6,  'Göteborg e staden på g!'),
+        (DEFAULT, 'Svart bälte i kråkfäktning',             false, NULL,  true,  true,  7, 1, 1, 8,  'Knappt använd.'),
+        (DEFAULT, 'Gult bälte i kråkfäktning',              false, NULL,  true,  true,  7, 1, 2, 8,  'Sparsamt använd.'),
+        (DEFAULT, 'Rosa bälte i kråkfäktning',              true,  now(), true,  false, 9, 1, 1, 8,  'Märkligt rosa bälte i någon form av kampsport.')
+    ;
+    """
+
+    insert_fictive_user_saved_listings_query = """
+    INSERT INTO user_saved_listings(user_id, listing_id)
+    VALUES
+        (1, 2), (1, 1), (1, 5), (3, 1), (1, 4), (2, 1), (6, 3)
+    ;
+    """
+
+    insert_fictive_listing_price_suggestions_query = """
+    INSERT INTO listing_price_suggestions(listing_id, suggesting_user_id, suggested_price, suggested_at)
+    VALUES
+        (2, 3, 4000, now()), (5, 5, 10, now())
+    ;
+    """
+
+    insert_fictive_listing_bids_query = """
+    INSERT INTO listing_bids(user_id, listing_id, bid_value, bid_at)
+    VALUES
+        (1, 2, 400, now()),
+        (2, 2, 450, now()),
+        (1, 2, 500, now()),
+        (6, 1, 2, now()),
+        (7, 4, 35, now()),
+        (1, 4, 40, now())
+    ;
+    """
+
+    insert_fictive_listing_photos_query = """
+    INSERT INTO listing_photos(listing_id, url, view_order, uploaded_at)
+    VALUES
+        (1, '/server/listings/photos/1_0.jpg', NULL,    DEFAULT),
+        (1, '/server/listings/photos/1_1.jpg', NULL,    DEFAULT),
+        (1, '/server/listings/photos/1_2.jpg', NULL,    DEFAULT),
+        (2, '/server/listings/photos/2_0.jpg', 1,       DEFAULT),
+        (2, '/server/listings/photos/2_1.jpg', 0,       DEFAULT),
+        (3, '/server/listings/photos/3_0.jpg', NULL,    DEFAULT),
+        (4, '/server/listings/photos/4_0.jpg', NULL,    DEFAULT),
+        (5, '/server/listings/photos/5_0.jpg', NULL,    DEFAULT)
+    ;
+    """
+
+    insert_fictive_listing_views_query = """
+    INSERT INTO listing_views(ip_address, listing_id, viewed_at)
+    VALUES
+        ('192.168.1.5',     1, DEFAULT),
+        ('192.168.2.4',     1, DEFAULT),
+        ('192.168.145.234', 2, DEFAULT),
+        ('192.168.132.123', 3, DEFAULT),
+        ('192.168.156.123', 1, DEFAULT),
+        ('192.168.123.221', 5, DEFAULT)
+    ;
+    """
+
+    insert_fictive_listing_attributes_query = """
+    INSERT INTO listing_attributes(listing_id, category_filter_option_id)
+    VALUES
+        (1, 1), (1, 3), (2, 6), (2, 7)
+    ;
+    """
+
+    insert_fictive_charity_organizations_query = """
+    INSERT INTO charity_organizations(title, logo_url)
+    VALUES
+        ('Musikhjälpen', '/server/charity_organizations/logotypes/musikhjalpen.png'),
+        ('Rädda Barnen', '/server/charity_organizations/logotypes/radda_barnen.png'),
+        ('Svenska Röda Korset', '/server/charity_organizations/logotypes/svenska_roda_korset.png'),
+        ('SOS Barnbyar', '/server/charity_organizations/logotypes/sos_barnbyar.png'),
+        ('Naturskyddsföreningen', '/server/charity_organizations/logotypes/naturskyddsforeningen.png')
+    """
+
+    insert_fictive_listing_auction_attributes_query = """
+    INSERT INTO listing_auction_attributes(
+        listing_id, starting_price, auction_deadline_datetime, auto_republish, minimum_price, storage_location, charity_id, share_info_upon_donation
+        )
+    VALUES
+        (1, 10, '2023-12-24 15:00:00 Europe/Stockholm'::timestamptz, false, 10, NULL, NULL, DEFAULT),
+        (2, 100, '2023-12-21 19:00:00 Europe/Stockholm'::timestamptz, true, NULL, NULL, 2, true),
+        (3, 1, '2023-12-26 14:30:00 Europe/Stockholm'::timestamptz, false, 100, 'Bornholm', 1, DEFAULT)
+    ;
+    """
+
+    insert_fictive_listing_buynow_attributes_query = """
+    INSERT INTO listing_buynow_attributes(listing_id, price, auto_republish, storage_location, charity_id, share_info_upon_donation)
+    VALUES
+        (5, 10, false, NULL, NULL, DEFAULT)
+    ;
+    """
+
+    insert_fictive_product_weight_options_query = """
+    INSERT INTO product_weight_options(weight)
+    VALUES 
+        (50), (100), (250), (500), (1000), (2000), (3000), (5000), 
+        (7000), (9000), (10000), (12000), (15000), (20000)
+    ;
+    """
+
+    insert_fictive_product_size_options_query = """
+    INSERT INTO product_size_options(size)
+    VALUES ('34x24x7'), ('60x40x20'), ('40x40x120');
+    """
+
+    insert_fictive_shipping_ranges_query = """
+    INSERT INTO shipping_ranges(range_title)
+    VALUES ('Sverige'), ('EU'), ('Hela världen');
+    """
+
+    insert_fictive_listing_shipping_settings_query = """
+    INSERT INTO listing_shipping_settings(listing_id, shipping_company_id, user_shipping_cost, packaging_fee, product_weight_id, product_size_id, shipping_range_id)
+    VALUES 
+        (1, 2, NULL,    NULL,   2, 1, 1),
+        (2, 3, 150,     50,     4, 2, 2),
+        (3, 1, NULL,    29,     1, 3, 3)
+    """
+
+
     with connection:
         with connection.cursor() as cursor:
             # Geographical
@@ -547,6 +752,26 @@ def seed_data():
             cursor.execute(insert_fictive_newsletter_frequency_options_query)
             cursor.execute(insert_user_email_notification_settings_query)
             cursor.execute(insert_fictive_newsletter_frequency_options_query)
+            # Listings
+            cursor.execute(insert_fictive_listing_types_query)
+            cursor.execute(insert_fictive_listing_statuses_query)
+            cursor.execute(insert_fictive_listing_categories_query)
+            cursor.execute(insert_fictive_listing_category_filters_query)
+            cursor.execute(insert_fictive_listing_category_filter_options_query)
+            cursor.execute(insert_fictive_listings_query)
+            cursor.execute(insert_fictive_user_saved_listings_query)
+            cursor.execute(insert_fictive_listing_price_suggestions_query)
+            cursor.execute(insert_fictive_listing_bids_query)
+            cursor.execute(insert_fictive_listing_photos_query)
+            cursor.execute(insert_fictive_listing_views_query)
+            cursor.execute(insert_fictive_listing_attributes_query)
+            cursor.execute(insert_fictive_charity_organizations_query)
+            cursor.execute(insert_fictive_listing_auction_attributes_query)
+            cursor.execute(insert_fictive_listing_buynow_attributes_query)
+            cursor.execute(insert_fictive_product_weight_options_query)
+            cursor.execute(insert_fictive_product_size_options_query)
+            cursor.execute(insert_fictive_shipping_ranges_query)
+            cursor.execute(insert_fictive_listing_shipping_settings_query)
     
     if connection:
         connection.close()
