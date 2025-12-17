@@ -54,4 +54,4 @@ def seed_fictive_data():
 if __name__ == "__main__":
     print(create_tables())
     # Uncomment below and run to insert fictive data:
-    # print(seed_fictive_data())        
+    print(seed_fictive_data())        
