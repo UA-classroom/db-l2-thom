@@ -4,14 +4,19 @@ import psycopg2
 from db_setup import get_connection
 from fastapi import FastAPI, HTTPException, status
 from psycopg2.extras import RealDictCursor
-from schemas import CountryCreate, CityCreate, UserCreate, UserDetailsCreate, UserNotificationSettingsCreate, NewsletterFrequencyOptionCreate
+from schemas import (CountryCreate, CityCreate, UserCreate, UserDetailsCreate, 
+                     UserNotificationSettingsCreate, NewsletterFrequencyOptionCreate
+                     )
 
 
 app = FastAPI()
 
+
 # Detail endpoints
+
 @app.get("/user/{id}")
 def get_user(id: int):
+    """Get a user by provided user_id."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -24,6 +29,7 @@ def get_user(id: int):
 
 @app.get("/users")
 def list_users(limit: int = 25):
+    """List all users."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -36,6 +42,7 @@ def list_users(limit: int = 25):
 
 @app.get("/user/{id}/newsletter_frequency")
 def get_user_newsletter_frequency_choice(id: int):
+    """Get a specific user's newsletter frequency setting."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -51,6 +58,7 @@ def get_user_newsletter_frequency_choice(id: int):
 
 @app.get("/listing/{id}")
 def get_listing(id: int):
+    """Get a specific listing by listing_id."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -63,6 +71,7 @@ def get_listing(id: int):
 
 @app.get("/listing/{id}/photos")
 def get_listing_photos(id: int):
+    """Get all photos that belongs to a specific listing_id."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -75,6 +84,7 @@ def get_listing_photos(id: int):
 
 @app.get("/listings/photos")
 def list_listing_photos():
+    """List all listing photos."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -86,6 +96,7 @@ def list_listing_photos():
 
 @app.get("/listings")
 def list_listings(limit: int = 25):
+    """List all listings."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -98,6 +109,7 @@ def list_listings(limit: int = 25):
 
 @app.get("/user/{user_id}/recieved-ratings")
 def get_received_ratings(user_id: int):
+    """Get all ratings a specific user_id has received."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -117,6 +129,7 @@ def get_received_ratings(user_id: int):
 
 @app.get("/user/{id}/provided-ratings")
 def get_provided_ratings(user_id: int):
+    """Get all ratings a specific user has given another user."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -132,6 +145,7 @@ def get_provided_ratings(user_id: int):
 
 @app.get("/ratings")
 def list_ratings(limit: int = 25):
+    """List all ratings."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -143,10 +157,11 @@ def list_ratings(limit: int = 25):
             return result
 
 
-
 # Delete endpoints
+
 @app.delete("/listing/photos/{id}")
 def delete_listing_photo(id: int):
+    """Delete a specific listing photo by photo id."""
     connection = get_connection()
     with connection:
         with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -160,6 +175,7 @@ def delete_listing_photo(id: int):
 
 
 # Post endpoints
+
 @app.post("/countries")
 def create_country(country_input: CountryCreate):
     """Create a new country in the 'countries' table.

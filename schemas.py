@@ -1,7 +1,9 @@
 from datetime import date
 from pydantic import BaseModel, Field, EmailStr
 
+
 # Geographical
+
 class CountryCreate(BaseModel):
     name: str = Field(..., max_length=70)
 
@@ -10,7 +12,8 @@ class CityCreate(BaseModel):
     country_id: int = Field(..., )
 
 
-# Users
+# User
+
 class UserCreate(BaseModel):
     username: str = Field(..., max_length=50)
     email: EmailStr = Field(..., max_length=200)
@@ -40,6 +43,3 @@ class UserNotificationSettingsCreate(BaseModel):
     other_companies_promotions: bool
     newsletters: bool
     newsletter_frequency_id: int
-
-
-    
