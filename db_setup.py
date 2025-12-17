@@ -34,15 +34,15 @@ def create_tables():
     # Geographical
     create_countries_table_query = """
     CREATE TABLE IF NOT EXISTS countries(
-        id      INT     GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        name    TEXT    UNIQUE  NOT NULL
+        id      INT             GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        name    VARCHAR(100)    UNIQUE  NOT NULL
     );
     """
 
     create_cities_table_query = """
     CREATE TABLE IF NOT EXISTS cities(
-        id          INT     GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        name        TEXT    UNIQUE  NOT NULL,
+        id          INT             GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        name        VARCHAR(100)    UNIQUE  NOT NULL,
         country_id  BIGINT  REFERENCES countries(id)
     );
     """
@@ -52,24 +52,24 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS users(
         id              BIGINT          GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
         username        VARCHAR(50)     UNIQUE  NOT NULL, 
+        email           VARCHAR(200)    UNIQUE  NOT NULL,
         avatar_url      TEXT            UNIQUE,
-        description     TEXT,
+        description     VARCHAR(500),
         created_at      TIMESTAMPTZ     DEFAULT now()
     );
     """
 
     create_user_details_table_query = """
     CREATE TABLE IF NOT EXISTS user_details(
-        user_id         BIGINT  PRIMARY KEY  REFERENCES users(id),
-        first_name      TEXT,
-        last_name       TEXT,
-        email           TEXT    UNIQUE  NOT NULL,
+        user_id         BIGINT          PRIMARY KEY  REFERENCES users(id),
+        first_name      VARCHAR(100),
+        last_name       VARCHAR(100),
         phone           INT,
-        street_address  TEXT,
+        street_address  VARCHAR(200),
         zip_code        INT,
-        city_id         INT     REFERENCES cities(id),
-        country_id      INT     REFERENCES countries(id),
-        is_company      BOOL    NOT NULL  DEFAULT (false)
+        city_id         INT             REFERENCES cities(id),
+        country_id      INT             REFERENCES countries(id),
+        is_company      BOOL            NOT NULL  DEFAULT (false)
     );
     """
 
@@ -103,8 +103,8 @@ def create_tables():
 
     create_newsletter_frequency_options_table_query = """
     CREATE TABLE IF NOT EXISTS newsletter_frequency_options(
-        id      BIGINT  GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
-        title   TEXT    NOT NULL
+        id      BIGINT          GENERATED ALWAYS AS IDENTITY  PRIMARY KEY,
+        title   VARCHAR(200)    NOT NULL
     );
     """
 
@@ -505,17 +505,6 @@ def seed_data():
     ;
     """
 
-    insert_fictive_newsletter_frequency_options_query = """
-    INSERT INTO newsletter_frequency_options(title)
-    VALUES
-        ('Jag vill ta del av samtliga erbjudanden, rabattkoder & rekommendationer'),
-        ('Endast 1 gång per vecka'),
-        ('Endast 1 gång varannan vecka'),
-        ('Endast 1 gång i månaden'),
-        ('Pausa alla nyhetsbrev i 3 månader')
-    ;
-    """
-
     insert_user_email_notification_settings_query = """
     INSERT INTO user_email_notification_settings(
         user_id,                 upon_new_device_login,             copy_read_messages,         favorites_list_updates, upon_missing_payment, 
@@ -759,8 +748,8 @@ def seed_data():
         listing_id, reviewing_user_id, reviewed_at, positive_review, review_comment, listing_description_rating, listing_communication_rating, listing_delivery_time_rating
         )
     VALUES
-        (1, 2, DEFAULT, true, 'Smidig affär! Kan rekommendera :)', NULL, NULL, NULL),
-        (2, 5, DEFAULT, false, 'Osmidig affär! Kan inte rekommendera! >:(', 1, 1, 1)
+        (1, 4, DEFAULT, true, 'Smidig affär! Kan rekommendera :)', NULL, NULL, NULL),
+        (2, 8, DEFAULT, false, 'Osmidig affär! Kan inte rekommendera! >:(', 1, 1, 1)
     ;
     """
 
@@ -810,6 +799,6 @@ if __name__ == "__main__":
     # Only reason to execute this file would be to create new tables, meaning it serves a migration file
     create_tables()
     print("Tables created successfully.")
-    seed_data()
+    # seed_data()
     print("Fictive data was inserted successfully.")
     
